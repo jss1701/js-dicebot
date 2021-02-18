@@ -1,1 +1,1 @@
-worker: python bot/js-dicebot.py
+worker: python js-dicebot.py
