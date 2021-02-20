@@ -171,6 +171,9 @@ async def on_message(message):
 			response = RollDesc + ' = ' + str(total)+' '+hashmssg
 		else:
 			response = """To use, type '!' followed by the dice equation ie. (3d6) (1d20+8) (2d6+1d8)
+			To reroll rolls at or below a minimum value(once), use r, such as !3d6r1 
+			To keep rerolling, use rr instead, !3d6rr1
+			To only keep some of the dice rolled, use k, such as !4d6k3
 			If the desired dice equation is 1d20+[n], you can use !Xn"""
 		await message.channel.send(response)
     
