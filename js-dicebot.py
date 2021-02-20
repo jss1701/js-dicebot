@@ -4,6 +4,10 @@ import random
 
 import discord
 
+#
+#from dotenv import load_dotenv
+#load_dotenv()
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
@@ -25,60 +29,109 @@ async def on_ready():
 @client.event
 async def on_message(message):
 
-	def startroll():
+	def startRoll():
 		nonlocal RollDesc
-		nonlocal numdice
+		nonlocal numDice
 		nonlocal op
 		nonlocal i
 		nonlocal total
-		nonlocal n
+		nonlocal numExpected
+		nonlocal dType
+		nonlocal keepNum
+		nonlocal rerollVal
+		nonlocal keepRerolling
 		i = 1
 		n = 0
 		total=0
 		RollDesc=''
 		op='+'
 		numdice = 0
+		numExpected='n'
+		dType=0
+		keepNum=0
+		rerollVal=0
+		keepRerolling=False
 		
-		
-	def takenumber(num):
+	def makeRoll():
 		nonlocal RollDesc
-		nonlocal numdice
+		nonlocal numDice
+		nonlocal dType
+		nonlocal keepNum
+		nonlocal rerollVal
+		nonlocal keepRerolling
 		nonlocal op
+		nonlocal numExpected
 		nonlocal total
-		if numdice==0:
-			numdice = num
-		else:
-			tot = 0
-			m=0
-			if RollDesc != '':
-				RollDesc += op
-			for m in range(0,numdice):
-				r=random.randint(1,num)
-				tot+=r
-				RollDesc += '['+str(r)+']'
-			
-			if op == '+': total += tot
-			elif op == '-': total -= tot
-			numdice = 0
-	
+		rerolled = False
+		rolls = []
+		r=0
+		if dType<1:
+			dType=1000
+		while len(rolls) < numDice:
+			r=random.randint(1,dType)
+			if (r > rerollVal) or (rerolled and not keepRerolling):
+				rolls.append(r)
+				rerolled = False
+			else:
+				rerolled = True
+		if keepNum>0:
+			rolls.sort();
+			while len(rolls)>keepNum:
+				rolls.pop(0)
+		while len(rolls)>0:
+			RollDesc+='['+str(rolls[0])+']'
+			if op == '+': 
+				total += rolls[0]
+			elif op == '-': 
+				total -= rolls[0]
+			rolls.pop(0)
+		numDice=0
+		dType=0		
+		keepNum=0
+		rerollVal=0
+		keepRolling=False
+		numExpected='n'
+				
+	def takeNumber(num):
+		nonlocal numDice
+		nonlocal dType
+		nonlocal keepNum
+		nonlocal rerollVal
+		nonlocal numExpected
+		if numExpected in 'nN':
+			numDice = num
+		elif numExpected in 'dD':
+			dType = num
+		elif numExpected in 'rR':
+			rerollVal = num
+		elif numExpected in 'kK':
+			keepNum = num
+		
+		
 		
 	if message.author == client.user:
 		return
-	i=0
-	n=0
-	total=0
-	RollDesc=''
-	op='+'
-	numdice=0
-	hashmssg='' 
+	i = 0
+	n = 0
+	total = 0
+	hashmssg = '' 
+	numDice = 0
+	numExpected = 0
+	keepNum = 0
+	dType = 0;
+	rerollVal = 0
+	keepRerolling = False
 	
 	if message.content.startswith('!'):
-		startroll()
+		startRoll()
 		
 		i=1
 		if message.content[i] in 'xX':
-			takenumber(1)
-			takenumber(20)
+			numExpected='n'
+			takeNumber(1)
+			numExpected='d'
+			takeNumber(20)
+			makeRoll()
 		elif message.content[i] in 'hH':
 			total = 0
 			i = len(message.content);
@@ -88,11 +141,15 @@ async def on_message(message):
 			if message.content[i] in '1234567890':
 				n = (n * 10) + int(message.content[i])
 			else:
-				if (n>0) or (message.content[i] in 'dD'): 
-					if n>0:
-						takenumber(n)
+				if n>0:
+					takeNumber(n)
 					n=0
+				if message.content[i] in 'dDrRkK': 
+					if (numExpected in 'rR') and (message.content[i] in 'rR'):
+						keepRerolling = True
+					numExpected = message.content[i]
 				if message.content[i] in '+-': 
+					makeRoll()
 					op = message.content[i]
 				elif message.content[i] == '#':
 					hashmssg=message.content[i:]
@@ -100,11 +157,15 @@ async def on_message(message):
 				
 			i+=1
 		if (n>0):
-			takenumber(n)
-		if numdice > 0:
-			RollDesc += op + str(numdice)
-			if op == '+': total += numdice
-			elif op == '-': total -= numdice
+			takeNumber(n)
+			if numExpected in 'dDrRkK':
+				makeRoll()
+			n=0
+			
+		if numDice > 0:
+			RollDesc += op + str(numDice)
+			if op == '+': total += numDice
+			elif op == '-': total -= numDice
 								
 		if total > 0:		
 			response = RollDesc + ' = ' + str(total)+' '+hashmssg
