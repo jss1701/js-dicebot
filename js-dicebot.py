@@ -66,7 +66,8 @@ async def on_message(message):
 		rolls = []
 		r=0
 		if dType<1:
-			dType=1000
+			rolls.append(numDice)
+			numDice=0
 		while len(rolls) < numDice:
 			r=random.randint(1,dType)
 			if (r > rerollVal) or (rerolled and not keepRerolling):
@@ -78,8 +79,13 @@ async def on_message(message):
 			rolls.sort();
 			while len(rolls)>keepNum:
 				rolls.pop(0)
+		if (len(rolls)>0) and not (RollDesc==''):
+			RollDesc+=' '+op+' '
 		while len(rolls)>0:
-			RollDesc+='['+str(rolls[0])+']'
+			if dType>0:
+				RollDesc+='['+str(rolls[0])+']'
+			else:
+				RollDesc+=str(rolls[0])
 			if op == '+': 
 				total += rolls[0]
 			elif op == '-': 
@@ -106,7 +112,7 @@ async def on_message(message):
 			rerollVal = num
 		elif numExpected in 'kK':
 			keepNum = num
-		
+		numExpecte=' '
 		
 		
 	if message.author == client.user:
@@ -121,6 +127,7 @@ async def on_message(message):
 	dType = 0;
 	rerollVal = 0
 	keepRerolling = False
+	RollDesc=''
 	
 	if message.content.startswith('!'):
 		startRoll()
@@ -158,14 +165,10 @@ async def on_message(message):
 			i+=1
 		if (n>0):
 			takeNumber(n)
-			if numExpected in 'dDrRkK':
-				makeRoll()
 			n=0
 			
 		if numDice > 0:
-			RollDesc += op + str(numDice)
-			if op == '+': total += numDice
-			elif op == '-': total -= numDice
+			makeRoll()
 								
 		if total > 0:		
 			response = RollDesc + ' = ' + str(total)+' '+hashmssg
